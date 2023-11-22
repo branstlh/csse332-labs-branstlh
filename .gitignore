@@ -127,7 +127,7 @@ flycheck_*.el
 .LSOverride
 
 # Icon must end with two \r
-Icon
+Icon
 
 # Thumbnails
 ._*
@@ -175,4 +175,3 @@ tags
 [._]*.un~
 
 # End of https://www.toptal.com/developers/gitignore/api/vim,c,make,macos,linux,emacs
-solution/
