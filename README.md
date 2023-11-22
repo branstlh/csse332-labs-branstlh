@@ -116,9 +116,90 @@ To github.com:nouredd2/csse332-labs-user.git
 Using your browser, verify that everything now shows up on your
 `csse332-labs-user` private repository.
 
+## 6. Making your own changes
+
+When attempting the labs, you can treat this repository just like any other
+private repository where you can maintain your code. Say you modified a file
+called `solution.c`, then you can follow this workflow to push it to your
+private repository.
+
+Add the file to the change list:
+
+```shell
+$ git add solution.c
+```
+
+Commit your changes:
+
+```shell
+$ git commit -m "finished lab 1"
+```
+
+Push your changes:
+
+```shell
+$ git push
+```
+
+This will push the changes to your own private repository.
+
+### Some hints
+
+Recall that at any time, you can check the status of your repository using:
+
+```shell
+$ git status
+```
+
+Also, to add all _modified_ files in one shot (without adding them manually),
+you can use:
+
+```shell
+$ git add -am "finished lab 2"
+```
+
+__Note__ that the above command will add all _modified_ files to the change
+list, but will not add your newly created files (if any); you will have to add
+those separately using `git add`.
+
+Finally, please do not commit any object files (`.o`), binary files
+(executables), vim swap files (`.swp`), and anything that is compiled and
+generated, those will create a mess if you work across different devices and
+will pollute your repository.
+
+## 7. Obtaining changes from the class repository
+
+When we add a new lab assignment, you can obtain the added changes using
+
+```shell
+$ git pull upstream main
+```
+
+Then push those changes to your private repo using:
+
+```shell
+$ git push
+```
+
+We will organize things in separate folders to minimize merge conflicts as much
+as possible. If you work within each lab's own directory, you should not have
+any conflicts arise from obtaining new changes from the class repository.
+
+## 8. Discarding changes to a file
+
+If at any point in time, you made changes to a file, say `lab1.c`, but would
+like to restart your lab, you can restore the file to its original version from
+the class repository using:
+
+```shell
+$ git checkout upstream/main -- lab1.c
+```
+
+__Note__ that this will discard all changes you have made to `lab1.c`, so make
+sure that this is really the behavior you would like to see.
+
 ---
 
 Last edited on Wed 22 Nov 2023 by Mohammad Noureddine. If you find typos or
 errors, please open an issue on Github.
-
 
