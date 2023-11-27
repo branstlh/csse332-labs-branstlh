@@ -29,7 +29,6 @@ main(int argc, char *argv[])
 
 	printf("(%u): Allocated int at location %p\n", getpid(), iptr);
 
-	i = 0;
 	while(i < 10) {
 		*iptr = i++;
 		printf("(%u): Updated the pointer's value to %d\n", getpid(),
