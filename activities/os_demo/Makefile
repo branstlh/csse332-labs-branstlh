@@ -2,13 +2,13 @@ all: glue illusionist referee
 
 .PHONY: all clean
 
-glue:
+glue: glue.c
 	gcc -o glue glue.c
 
-illusionist:
+illusionist: illusionist.c
 	gcc -o illusionist illusionist.c -fno-stack-protector
 
-referee:
+referee: referee.c
 	gcc -o referee referee.c
 
 clean:
