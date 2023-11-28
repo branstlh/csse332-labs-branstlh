@@ -53,6 +53,19 @@ Once ready, compile using `make extract_num_str` and run your code using:
 
 Make sure your output looks good and it matches the expected ones.
 
+## 4. `get_first_byte.c`
+
+For this problem, you simply need to complete the given code. Make sure to
+carefully read the comments. This exercise might be a bit trickier.
+
+Once ready, compile using `make extract_num_str` and run your code using:
+
+  ```shell
+  $ ./extract_num_str
+  ```
+
+Make sure your output looks good and it matches the expected ones.
+
 ---
 
 # Feedback
