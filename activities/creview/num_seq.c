@@ -78,8 +78,9 @@ int main(int argc, char **argv) {
   printf("Allocated s at %p, s->array at %p, printing the array:\n", s,
       s->array);
   for(; i < s->length; i++) {
-    printf("%d", s->array[i]);
+    printf("%d ", s->array[i]);
   }
+  printf("\n");
 
   free_num_seq(s);
 }
