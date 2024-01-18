@@ -8,48 +8,67 @@
 
 #define NUM_ITERATIONS 10
 
-#define NUM_PRODUCERS 3
-#define NUM_CONSUMERS 8
+#define NUM_PRODUCERS 2
+#define NUM_CONSUMERS 5
 
 #define BUF_SIZ 3
 
-// we now have a plate that can hold BUF_SIZ burgers
-int burgers[BUF_SIZ];
+/**
+ * This is an extension of the producer consumer problem to include 2 producers
+ * and 5 consumers that would be accessing a shared circular buffer.
+ *
+ * First, make sure to read and understand this code, then add your
+ * synchronization mechanisms to make sure that the code runs correctly.
+ */
 
-// this indicates which burger we can eat from
-volatile int eating_index = -1;
-// count the number of burgers cooked so far
-volatile int num_burgers_cooked = 0;
+// we now have a plate that can hold BUF_SIZ burgers
+struct circular_plate {
+  int burgers[BUF_SIZ];
+  int eat_index;
+  int place_index;
+  int on_plate;
+} plate;
+
+int num_cooked_burgers = 0;
+
 
 static int is_empty() {
-  return eating_index == -1;
+  return plate.on_plate == 0;
 }
 
 static int is_full() {
-  return eating_index == BUF_SIZ-1;
+  return plate.on_plate == BUF_SIZ;
 }
 
 void cook_burger(int id) {
+  int where;
 
   // make sure plate is not full
   assert(!is_full());
 
-  burgers[++eating_index] = 1;
-  num_burgers_cooked++;
+  where = plate.place_index;
+  plate.burgers[plate.place_index] = id;
+  plate.place_index = (plate.place_index + 1) % BUF_SIZ;
+  plate.on_plate++;
+  num_cooked_burgers++;
 
   print_red("Cook thread %d adding burger %d to the plate at %d...\n",
-            id, num_burgers_cooked, eating_index);
+            id, num_cooked_burgers, where);
 }
 
 void eat_burger(int id) {
+  int where, by;
 
   // make sure plate is not empty
   assert(!is_empty());
 
-  burgers[--eating_index] = 0;
+  where = plate.eat_index;
+  by = plate.burgers[where];
+  plate.eat_index = (plate.eat_index + 1) % BUF_SIZ;
+  plate.on_plate--;
 
-  print_green("Eater thread %d ate burger from position %d on plate...\n",
-              id, eating_index);
+  print_green("Eater thread %d ate burger from position %d on plate, made by %d...\n",
+              id, where, by);
 }
 
 void *cook(void *arg) {
@@ -58,7 +77,7 @@ void *cook(void *arg) {
   // grab the id of the cook thread
   id = *(int*)arg;
 
-  for(i = 0; i < NUM_ITERATIONS; i++) {
+  for(i = 0; i < (NUM_CONSUMERS*NUM_ITERATIONS)/NUM_PRODUCERS; i++) {
     cook_burger(id);
   }
 
@@ -86,6 +105,11 @@ int main(int argc, char **argv) {
   int i;
   int consumer_ids[NUM_CONSUMERS];
   int producer_ids[NUM_PRODUCERS];
+
+  // intialize the plate
+  plate.on_plate = 0;
+  plate.eat_index = 0;
+  plate.place_index = 0;
 
   pthread_t producers[NUM_PRODUCERS];
   pthread_t consumers[NUM_CONSUMERS];
