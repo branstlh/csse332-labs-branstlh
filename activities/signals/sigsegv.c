@@ -7,7 +7,7 @@ void setsighandler(int signum, void (*handler)(int)) {
 
   act.sa_handler = handler;
   sigemptyset(&act.sa_mask);
-  act.sa_flags = 0;
+  act.sa_flags = SA_RESTART;
   sigaction(signum, &act, NULL);
 }
 
