@@ -26,3 +26,10 @@
  */
 
 // TODO: Add your code here!
+
+int main() {
+	printf("Parent has pid %d", getpid());
+	for (int i = 0; i < 4; i++) {
+		int result = 
+	}	
+}
