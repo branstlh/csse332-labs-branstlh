@@ -3,7 +3,10 @@
 
 int main(int argc, char **argv)
 {
-  /* TODO: Insert your code here. */
-
-  exit(0);
+	if (argc != 2) {
+		printf("Usage: sleep x, where x is ticks to sleep");
+		exit(0);
+	}
+	sleep(atoi(argv[1]));
+	exit(0);
 }
