@@ -8,14 +8,18 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
+void handle_sigchld(int ignored){
+	wait(NULL);
+}
 
 int main() {
   char command[82];
   char *parsed_command[2];
   //takes at most two input arguments
   // infinite loop but ^C quits
+  signal(SIGCHLD, handle_sigchld);
   while (1) {
-    printf("SHELL%% ");
+    printf("RHSH%% ");
     fgets(command, 82, stdin);
     command[strlen(command) - 1] = '\0';//remove the \n
     int len_1;
@@ -43,6 +47,25 @@ int main() {
           !strcmp(parsed_command[0], "exit")) {
         exit(EXIT_SUCCESS);
       }
+    }
+    if (strncmp("BG", parsed_command[0], 2) == 0){
+		if (fork() == 0){
+	    	if (fork() == 0){
+		    	execlp(parsed_command[0] + 2, parsed_command[0], parsed_command[1], NULL);
+		    	exit(0);
+		    } else {
+		    	wait(NULL);
+		    	printf("Background command finished");
+		    	exit(0);
+		    }
+	    }
+    } else {
+	    if (fork() == 0){
+	    	execlp(parsed_command[0], parsed_command[0], parsed_command[1], NULL);
+	    	exit(0);
+	    } else {
+	    	wait(NULL);
+	    }
     }
 
   }
