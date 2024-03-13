@@ -40,7 +40,14 @@ char get_rand_char(void) {
  * @return nothing.
  */
 void child_fn(int write_fd) {
+  char buf[512];
   printf("[Child (%d)] Writer started...\n", getpid());
+  int x = rand() % 40;
+  for(int i = 0, i < x, i++) {
+  	buf[i] = get_rand_char();
+  }
+  dprintf(write_fd, "%s", buf);
+  exit(0);
 }
 
 /**
@@ -57,16 +64,23 @@ void parent_fn(int read_fd) {
 
 int main(int argc, char **argv) {
   // TODO: Declare your variables here.
-
+  int fd[2];
   // seed the random number generator
   srand(time(0));
-
   // TODO: Set up your forks here.
   //        Have the child call the child_fn function.
   //        Have the parent call the parent_fn function.
   //
   // HINT: use the get_rand_char function to get a random character.
   // HINT: use `int x = rand() % 40;` to get a random integer between 0 and 40.
+  pipe(fd);
+  if (fork() == 0) {
+    close(fd[0]);
+  	child_fn(fd[1]);
+  } else {
+  	close(fd[1]);
+  	parent_fn(fd[0]);
+  }
   
   exit(0);
 }

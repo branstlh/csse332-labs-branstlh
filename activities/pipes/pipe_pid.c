@@ -26,14 +26,20 @@
 
 int main(int argc, char **argv) {
   pid_t pid;
-
+  int fd[2];
+  pipe(fd);
   pid = fork();
   if(pid == 0) {
     // child, I am the writer
+    close(fd[0]);
+    dprintf(fd[1], "Child PID: %d", getpid());
     exit(0);
   }
-
+  char buf[512];
   // parent, I am the reader
+  close(fd[1]);
+  read(fd[0], buf, 512);
+  printf("parent receieved %s", buf);
   exit(0);
 }
 
