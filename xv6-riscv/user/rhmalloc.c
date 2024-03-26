@@ -41,6 +41,8 @@ static void *heap_mem_start = 0;
 */
 static int initialized = 0;
 
+metadata_t* free_lists[18];
+
 /**
  * For testing purposes, exposed the initialization bit.
 */
@@ -95,6 +97,12 @@ uint8 rhmalloc_init(void)
 
   // TODO: Add your initialization code here, but do not change anything above
   // this line.
+  metadata_t *ptr = heap_mem_start;
+  ptr->size = MAX_HEAP_SIZE;
+  ptr->next = 0;
+  ptr->prev = 0;
+  ptr->in_use = 0;
+  free_lists[17] = ptr;
 
   return 0;
 }
@@ -136,8 +144,7 @@ void rhfree_all(void)
 */
 void *get_buddy(void *ptr, int exponent)
 {
-  // TODO: Add your code here.
-  return (void*)0;
+  return (void*)((long)ptr ^ (1 << exponent));
 }
 
 /**
@@ -152,8 +159,44 @@ void *rhmalloc(uint32 size)
     if(rhmalloc_init()) return 0;
 
   // TODO: Add your malloc code here.
-
-  return (void*)0;
+  int space = 32;
+  int exponent = 0;
+  while((space - sizeof(metadata_t)) < size){
+    space *= 2;
+    exponent++;
+  }
+  // if (free_lists[exponent] != 0) {
+    // void* to_return = free_lists[exponent];
+    // to_return->next->prev = 0;
+    // free_lists[exponent] = to_return->next;
+    // to_return->in_use = 1;
+    // return to_return;
+  // }
+  int new_ex = exponent;
+  while(free_lists[new_ex] == 0) {
+    new_ex++;
+  }
+  while(new_ex != exponent) {
+    metadata_t* to_split = free_lists[new_ex];
+    if (to_split->next != 0)
+      to_split->next->prev = 0;
+    free_lists[new_ex] = to_split->next;
+    to_split->size /= 2;
+    to_split->next = ((void*)to_split) + to_split->size;
+    new_ex--;
+    to_split->next->next = free_lists[new_ex];
+    to_split->next->size = to_split->size;
+    to_split->next->in_use = 0;
+    free_lists[new_ex] = to_split;
+    to_split->prev = 0;
+    to_split->next->prev = to_split;
+  }
+  metadata_t* to_return = free_lists[exponent];
+  if (to_return->next != 0)
+    to_return->next->prev = 0;
+  free_lists[exponent] = to_return->next;
+  to_return->in_use = 1;
+  return to_return;
 }
 
 /**
