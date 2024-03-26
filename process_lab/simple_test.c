@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/wait.h>
+#include <string.h>
 
 #define simple_assert(message, test)                                           \
   do {                                                                         \
@@ -54,10 +56,48 @@ void setup(void) {
   usleep(3000000);
 }
 
+void handle_alarm() {
+	exit(2);
+}
+
 /**
  * Run all the test in the test suite.
  */
 void run_all_tests() { /* TODO: Add your code here. */
+	int pipes[num_tests][2];
+	int pids[num_tests];
+	setup();
+	for(int i = 0; i < num_tests; i++) {
+		pipe(pipes[i]);
+		pids[i] = fork();
+		if(pids[i] == 0) {
+			char *str;
+			close(pipes[i][0]);
+			signal(SIGALRM, handle_alarm);
+			alarm(3);
+			str = test_funcs[i]();
+			if (str == TEST_PASSED)
+				exit(0);
+			dprintf(pipes[i][1], "Test Failed: %s\n", str);
+			exit(1);
+		}
+		close(pipes[i][1]);
+	}
+	for(int i = 0; i < num_tests; i++) {
+		char buf[512];
+		int status;
+		read(pipes[i][0], buf, 512);
+		waitpid(pids[i], &status, 0);
+		if (!WIFEXITED(status)) {
+			printf("Test Crashed\n");
+		} else if (WEXITSTATUS(status) == 0) {
+			printf("Test Passed\n");
+		} else if (WEXITSTATUS(status) == 1){
+			printf("%s", buf);
+		} else {
+			printf("Test Timed Out\n");
+		}
+	}
 }
 
 char *test1() {
@@ -145,7 +185,7 @@ int main(int argc, char **argv) {
   add_test(test1);
   add_test(test2);
   add_test(test3);
-  /* add_test(test4); */
-  /* add_test(test5); */
+  add_test(test4);
+  add_test(test5);
   run_all_tests();
 }

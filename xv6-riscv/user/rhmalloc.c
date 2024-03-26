@@ -60,22 +60,23 @@ void *heap_start(void) { return heap_mem_start; }
  */
 uint8 rhmalloc_init(void)
 {
-  char *p;
+	char *p;
 
-  /* Grab the start of the memory where we are allocating. */
-  heap_mem_start = sbrk(0);
+	/* Grab the start of the memory where we are allocating. */
+	heap_mem_start = sbrk(0);
 
-  /* grow the memory area by MAX_HEAP_SIZE bytes */
-  p = sbrk(MAX_HEAP_SIZE);
-  if(p == (char *)-1) {
-    fprintf(2, "sbrk failed:exiting....\n");
-    exit(1);
-  }
-
-  /* TODO: Add code here to initialize freelist and its content. */
-  
-
-  return 0;
+	/* grow the memory area by MAX_HEAP_SIZE bytes */
+	p = sbrk(MAX_HEAP_SIZE);
+	if(p == (char *)-1) {
+		fprintf(2, "sbrk failed:exiting....\n");
+		exit(1);
+	}
+	freelist = (metadata_t *) p;
+	freelist->size = MAX_HEAP_SIZE - sizeof(metadata_t);
+	freelist->in_use = 0;
+	freelist->next = 0;
+	freelist->prev = 0;
+	return 0;
 }
 
 /**
@@ -87,11 +88,11 @@ uint8 rhmalloc_init(void)
  */
 void rhfree_all(void)
 {
-  /* Imagine what would happen on a double free, yikes! */
-  sbrk(-MAX_HEAP_SIZE);
+	/* Imagine what would happen on a double free, yikes! */
+	sbrk(-MAX_HEAP_SIZE);
 
-  freelist = 0;
-  heap_mem_start = 0;
+	freelist = 0;
+	heap_mem_start = 0;
 }
 
 /**
@@ -101,13 +102,34 @@ void rhfree_all(void)
  */
 void *rhmalloc(uint32 size)
 {
-  /* Check if we need to call rhmalloc_init and call it if needed. */
-  if(!freelist)
-    if(rhmalloc_init()) return 0;
+	/* Check if we need to call rhmalloc_init and call it if needed. */
+	if(!freelist)
+	if(rhmalloc_init()) return 0;
 
-  /* TODO: Add you malloc code here. */
-
-  return 0;
+	/* TODO: Add you malloc code here. */
+	metadata_t* head = freelist;
+	do {
+		if (head->size >= size && head->in_use == 0){
+			head->in_use = 1;
+			if (head->size <= size + sizeof(metadata_t)) {
+				return head + 1;
+			}
+			int temp_size = head->size;
+		head->size = ALIGN(size);
+			metadata_t* temp = head->next;
+			head->next = (metadata_t*)(((long)head) + head->size + sizeof(metadata_t));
+			head->next->size = temp_size - head->size - sizeof(metadata_t);
+			head->next->next = temp;
+			head->next->prev = head;
+		if (head->next->next != 0)
+				head->next->next->prev = head->next;
+			head->next->in_use = 0;
+			return head + 1;
+		}
+		head = head->next;
+	} while (head != 0);
+	
+	return 0;
 }
 
 /**
@@ -121,5 +143,18 @@ void *rhmalloc(uint32 size)
  */
 void rhfree(void *ptr)
 {
-  /* TODO: Add your free code here. */
+	metadata_t *to_free = ((metadata_t*)(ptr - sizeof(metadata_t)));
+	to_free->in_use = 0;
+	if ((to_free->next != 0) && (to_free->next->in_use == 0)) {
+		to_free->size += sizeof(metadata_t) + to_free->next->size;
+	if (to_free->next->next != 0)
+		to_free->next->next->prev = to_free;
+		to_free->next = to_free->next->next;
+	}
+	if ((to_free->prev != 0) && (to_free->prev->in_use == 0)) {
+		to_free->prev->size += sizeof(metadata_t) + to_free->size;
+	if (to_free->next != 0)
+		to_free->next->prev = to_free->prev;
+		to_free->prev->next = to_free->next;
+	}
 }
