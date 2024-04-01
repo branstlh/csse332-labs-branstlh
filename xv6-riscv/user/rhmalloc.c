@@ -175,6 +175,9 @@ void *rhmalloc(uint32 size)
   int new_ex = exponent;
   while(free_lists[new_ex] == 0) {
     new_ex++;
+    if (new_ex > 17) {
+      return 0;
+    }
   }
   while(new_ex != exponent) {
     metadata_t* to_split = free_lists[new_ex];
@@ -196,7 +199,7 @@ void *rhmalloc(uint32 size)
     to_return->next->prev = 0;
   free_lists[exponent] = to_return->next;
   to_return->in_use = 1;
-  return to_return;
+  return to_return + 1;
 }
 
 /**
@@ -210,5 +213,42 @@ void *rhmalloc(uint32 size)
  */
 void rhfree(void *ptr)
 {
-  // TODO: Add your free code here.
+  metadata_t* p = ptr - sizeof(metadata_t);
+  p->in_use = 0;
+  int exponent = 5;
+  unsigned size = 32;
+  while (size != p->size) {
+    size *= 2;
+    exponent++;
+  }
+  metadata_t* buddy = ((metadata_t*)get_buddy(p, exponent));
+  while (buddy->in_use == 0 && exponent < 22) {
+    if (buddy < p) {
+      p = buddy;
+      if (p->prev != 0)
+        p->prev->next = p->next;
+      if (p->next != 0)
+        p->next->prev = p->prev;
+      p->size *= 2;
+      if (free_lists[exponent - 5] == p) {
+        free_lists[exponent - 5] = p->next;
+      }
+    } else {
+      if (buddy->prev != 0)
+        buddy->prev->next = buddy->next;
+      if (buddy->next != 0)
+        buddy->next->prev = buddy->prev;
+      p->size *= 2;
+      if (free_lists[exponent - 5] == buddy) {
+         free_lists[exponent - 5] = buddy->next;
+       } 
+    }
+    buddy = ((metadata_t*)get_buddy(p, ++exponent));
+  }
+  p->next = free_lists[exponent - 5];
+  p->prev = 0;
+  if (p->next != 0) {
+    p->next->prev = p;
+  }
+  free_lists[exponent - 5] = p;
 }
