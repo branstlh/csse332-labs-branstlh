@@ -67,6 +67,21 @@ usertrap(void)
     syscall();
   } else if((which_dev = devintr()) != 0){
     // ok
+  } else if (r_scause() == 15) {
+    if (p->sz <= r_stval() || p->sz < PGSIZE){
+      printf("Segmentation fault occurred at address %p, from process %s (%d)\n",
+        r_stval(), p->name, p->pid);
+      setkilled(p);
+      
+    }else {
+      char* mem = kalloc();
+      if (!mem)
+        panic("page alloc failed");
+      memset(mem, 0, PGSIZE);
+      if (mappages(p->pagetable, PGROUNDDOWN(r_stval()), PGSIZE, (uint64)mem, PTE_R|PTE_U|PTE_W)) {
+        panic("could not map page");
+      }
+    }
   } else {
     printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
     printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
