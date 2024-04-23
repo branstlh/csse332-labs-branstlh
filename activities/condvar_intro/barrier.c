@@ -15,10 +15,19 @@
 
 #define NUM_THREADS 5
 
+int counter;
+pthread_mutex_t lock;
+pthread_cond_t release;
 
 void barrier_wait(void)
 {
-  // TODO: Add your code here.
+  pthread_mutex_lock(&lock);
+  if (--counter == 0){
+    pthread_cond_broadcast(&release);
+  }
+  while (counter != 0)
+    pthread_cond_wait(&release, &lock);
+  pthread_mutex_unlock(&lock);
 }
 
 void *thread_fn(void *arg)
@@ -41,7 +50,10 @@ int main()
   pthread_t threads[NUM_THREADS];
   int tids[NUM_THREADS];
   int i;
-
+  counter = NUM_THREADS;
+  pthread_cond_init(&release, 0);
+  pthread_mutex_init(&lock, NULL);
+  
   srand(time(NULL));
 
   for(i = 0; i < NUM_THREADS; i++) {
@@ -56,6 +68,8 @@ int main()
     pthread_join(threads[i], NULL);
   }
 
+  pthread_mutex_destroy(&lock);
+  
   printf("All done, goodbye...\n");
   exit(0);
 }

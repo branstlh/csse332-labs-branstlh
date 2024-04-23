@@ -14,6 +14,13 @@
 
 
 /* other global variable instantiations can go here */
+struct threadArg {
+  int number;
+  int *array;
+  int len;
+  int time;
+};
+
 
 /* Uses a brute force method of sorting the input list. */
 void BruteForceSort(int inputList[], int inputLength) {
@@ -90,7 +97,39 @@ char* descriptions[] = {"brute force","bubble","merge"};
 //
 // you can do it a different way but I think this is easiest
 void* thread_dispatch(void* data) {
-
+  struct threadArg *args = (struct threadArg*)data;
+  switch(args->number % 3)
+  {
+    struct timeval startt, stopt;
+    suseconds_t usecs_passed;
+    case 0:
+      printf("Sorting indexes %d-%d with brute force\n", args->number*args->len, args->number*args->len + args->len - 1);
+      gettimeofday(&startt, NULL);
+      BruteForceSort(args->array, args->len);
+      gettimeofday(&stopt, NULL);
+      usecs_passed = stopt.tv_usec - startt.tv_usec;
+      printf("Sorting indexes %d-%d with brute force done in %d usecs\n", args->number*args->len, args->number*args->len + args->len - 1, usecs_passed);
+      args->time = usecs_passed;
+      break;
+    case 1:
+      printf("Sorting indexes %d-%d with bubble\n", args->number*args->len, args->number*args->len + args->len - 1);
+      gettimeofday(&startt, NULL);
+      BubbleSort(args->array, args->len);
+      gettimeofday(&stopt, NULL);
+      usecs_passed = stopt.tv_usec - startt.tv_usec;
+      printf("Sorting indexes %d-%d with bubble done in %d usecs\n", args->number*args->len, args->number*args->len + args->len - 1, usecs_passed);
+      args->time = usecs_passed;
+      break;
+    case 2:
+      printf("Sorting indexes %d-%d with merge\n", args->number*args->len, args->number*args->len + args->len - 1);
+      gettimeofday(&startt, NULL);
+      MergeSort(args->array, args->len);
+      gettimeofday(&stopt, NULL);
+      usecs_passed = stopt.tv_usec - startt.tv_usec;
+      printf("Sorting indexes %d-%d with merge done in %d usecs\n", args->number*args->len, args->number*args->len + args->len - 1, usecs_passed);
+      args->time = usecs_passed;
+      break;
+  }
 }
 
 int main(int argc, char** argv) {
@@ -133,11 +172,69 @@ int main(int argc, char** argv) {
   }
 
   // create your threads here
+  pthread_t threads[n];
+  struct threadArg args[n];
+  for (int i = 0; i < n; i++){
+    args[i].number = i;
+    args[i].array = data_array + i*vals_per_thread;
+    args[i].len = vals_per_thread;
+    pthread_create(&threads[i], NULL, thread_dispatch, &args[i]);
+  }
 
   // wait for them to finish
-
+  int times[n];
+  for (int i = 0; i < n; i++) {
+    pthread_join(threads[i], NULL);
+    times[i] = args[i].time;
+  }
+  
   // print out the algorithm summary statistics
+  int bruteMin = times[0];
+  int bruteMax = times[0];
+  double bruteMean = 0;
+  for (int i = 0; i < n; i+=3) {
+    if (times[i] > bruteMax){
+      bruteMax = times[i];
+    }
+    if (times[i] < bruteMax) {
+      bruteMin = times[i];
+    }
+    bruteMean += times[i];
+  }
+  bruteMean/=(n/3);
 
+  int bubbleMin = times[1];
+  int bubbleMax = times[1];
+  double bubbleMean = 0;
+  for (int i = 1; i < n; i+=3) {
+    if (times[i] > bubbleMax){
+      bubbleMax = times[i];
+    }
+    if (times[i] < bubbleMax) {
+      bubbleMin = times[i];
+    }
+    bubbleMean += times[i];
+  }
+  bubbleMean/=(n/3);
+
+  int mergeMin = times[2];
+  int mergeMax = times[2];
+  double mergeMean = 0;
+  for (int i = 2; i < n; i+=3) {
+    if (times[i] > mergeMax){
+      mergeMax = times[i];
+    }
+    if (times[i] < mergeMax) {
+      mergeMin = times[i];
+    }
+    mergeMean += times[i];
+  }
+  mergeMean/=(n/3);
+
+  printf("brute force avg %f min %d max %d\n", bruteMean, bruteMin, bruteMax);
+  printf("bubble avg %f min %d max %d\n", bubbleMean, bubbleMin, bubbleMax);
+  printf("merge avg %f min %d max %d\n", mergeMean, mergeMin, mergeMax);
+  
   // print out the result array so you can see the sorting is working
   // you might want to comment this out if you're testing with large data sets
   printf("Result array:\n");
