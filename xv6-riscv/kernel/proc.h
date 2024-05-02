@@ -87,6 +87,8 @@ struct list_head {
 
 // Per-process state
 struct proc {
+  struct list_head list;
+  
   struct spinlock lock;
 
   // p->lock must be held when using these:
