@@ -86,23 +86,50 @@ eastwest car leaving intersection
 green in northsouth direction
 
  */
-
+int grndir = 0;
+int yellow = 0;
+int carsin = 0;
+pthread_mutex_t lock;
+pthread_cond_t ns;
+pthread_cond_t ew;
+pthread_cond_t light;
 
 void *north_south(void *arg)
 {
   printf("northsouth car nearing intersection\n");
+  pthread_mutex_lock(&lock);
+  while (grndir == 1 || yellow == 1)
+    pthread_cond_wait(&ns, &lock);
+  carsin++;
+  pthread_mutex_unlock(&lock);
   printf("northsouth car entering intersection\n");
   sleep(1);
   printf("northsouth car leaving intersection\n");
+  pthread_mutex_lock(&lock);
+  carsin--;
+  if (carsin == 0)
+    pthread_cond_broadcast(&light);
+  pthread_mutex_unlock(&lock);
+  
 }
 
 
 void *east_west(void *arg)
 {
   printf("eastwest car nearing intersection\n");
+  pthread_mutex_lock(&lock);
+  while (grndir == 0 || yellow == 1)
+    pthread_cond_wait(&ew, &lock);
+  carsin++;
+  pthread_mutex_unlock(&lock);
   printf("eastwest car entering intersection\n");
   sleep(1);
   printf("eastwest car leaving intersection\n");
+  pthread_mutex_lock(&lock);
+  carsin--;
+  if (carsin == 0)
+    pthread_cond_broadcast(&light);
+  pthread_mutex_unlock(&lock);
 }
 
 
@@ -112,14 +139,29 @@ void *stoplight(void *arg)
   while(1) {
 
     sleep(1);
+    pthread_mutex_lock(&lock);
     printf("yellow\n");
-
+    yellow = 1;
+    while (carsin > 0)
+      pthread_cond_wait(&light, &lock);
     // we need to wait for the intersection to clear
     printf("green in eastwest direction\n");
+    yellow = 0;
+    grndir = 1;
+    pthread_cond_broadcast(&ew);
+    pthread_mutex_unlock(&lock);
     sleep(1);
-    printf("yellow");
+    pthread_mutex_lock(&lock);
+    printf("yellow\n");
+    yellow = 1;
+    while (carsin > 0)
+      pthread_cond_wait(&light, &lock);
     // we need to wait for the intersection to clear
     printf("green in northsouth direction\n");
+    yellow = 0;
+    grndir = 0;
+    pthread_cond_broadcast(&ns);
+    pthread_mutex_unlock(&lock);
 
   }
 
@@ -130,6 +172,10 @@ int main()
 
   pthread_t tid[100];
   int i = 0;
+  pthread_mutex_init(&lock, NULL);
+  pthread_cond_init(&ns, 0);
+  pthread_cond_init(&ew, 0);
+  pthread_cond_init(&light, 0);
 
   // make sure we display the initial stoplight state before cars start
   printf("green in northsouth direction\n");
